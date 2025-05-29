@@ -1,0 +1,63 @@
+
+header{
+    
+    height: 10vh;
+    width: 100%;
+    background-color: #76448A;
+    text-align: center;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-family: Arial, Helvetica, sans-serif;    
+}
+#logo{
+  padding: 8px;
+  background-color: #262626;
+  border-radius: 100%;
+  margin-left: 2%;
+  align-items: center;
+  justify-content: center;
+}
+#logo>img{
+  width: 70px;
+  height: auto;
+}
+
+#nombre-empresa{
+  margin-left: 1%;
+}
+
+#dificultad{
+  margin-left: 10%;
+  margin-right: 1%;
+  font-style: italic;
+  font-size: 1.5em;
+}
+
+.opcion-dificultad{
+  font-size: 1.5em;
+  width: 10%;
+  height: 80%;
+  border: none;
+}
+
+#dificultad-facil{
+  background-color: #512E5F;
+  border-radius: 20px 0 0 20px;
+}
+
+#dificultad-medio{
+  background-color: #5B2C6F;
+
+}
+
+#dificultad-dificil{
+  background-color: #6C3483;
+  border-radius: 0 20px 20px 0;
+}
+
+
+
+#usuario{
+  margin-left: 2%;
+}
