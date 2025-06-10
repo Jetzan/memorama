@@ -2,19 +2,36 @@
 
 
 
-#juego{  
-    margin: auto;
-    padding: 2%;
-    width: 70vw;
-    background-color: #262626;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
+
+.juegoFacil{
+  grid-template-columns: repeat(4, 1fr);
+  width: 50vw;
+}
+
+.juegoMedio{
+  grid-template-columns: repeat(5, 1fr);
+  width: 50vw;
+}
+.juegoDificil{
+  grid-template-columns: repeat(7, 1fr);
+  width: 65vw;
 }
 
 
-.carta{
+
+
+#juego{  
+    margin: auto;
+    padding: 2%;
     
+    background-color: #262626;
+    display: grid;
+    gap: 10px;
+  
+  }
+
+
+.carta{    
     aspect-ratio: 1/1;
     background-color: transparent;
     transition: transform 0.6s;
@@ -24,8 +41,6 @@ padding: 0;
   background: none;
   cursor: pointer;
 
-
-  
 }
 .carta>img{
     width: 100%;
@@ -35,42 +50,72 @@ padding: 0;
 }
 
 
-.carta .front,
-.carta .back {
+
+
+/* Contenedor interno para aplicar el giro 3D */
+.carta .flip-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+}
+
+/* Gira la carta si tiene la clase flipped */
+.carta.flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+/* Cara frontal (tapa) */
+.flip-front,
+.flip-back {
   position: absolute;
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
   top: 0;
   left: 0;
-  border-radius: 10px;
-  transition: transform 0.6s;
 }
 
-/* Imagen frontal */
-.carta .front {
+/* Imagen de tapa */
+.flip-front img,
+.flip-back img {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  display: block;
-  z-index: 2;
-  transform: rotateY(0deg);
 }
 
-/* Parte trasera */
-.carta .back {
-  background-color: #333;
+/* Cara trasera (imagen de la carta descubierta) */
+.flip-back {
   transform: rotateY(180deg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1;
+}
+
+
+
+@media (max-width: 800px) {
+ 
+#juego{
+  width: 98%;
+}
+
+.juegoFacil{
+  grid-template-columns: repeat(3, 1fr);
   
 }
 
-/* Efecto flip cuando tiene la clase activa */
-.carta.active .front {
-  transform: rotateY(180deg);
+.juegoMedio{
+  grid-template-columns: repeat(4, 1fr);
+  
+}
+.juegoDificil{
+  grid-template-columns: repeat(4, 1fr);
+  
 }
 
-.carta.active .back {
-  transform: rotateY(360deg);
+}
+
+@media (max-width: 1200px) {
+  #juego{
+  width: 75%;
+  }
 }

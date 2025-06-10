@@ -14,35 +14,43 @@ function Login() {
 
   //Funcion ejecutada al presionar el boton
   const handleSubmit = async (e: React.FormEvent) => {
-    //Cancela el comportamiento por defecto que tiene el event submit
-    //ya que en caso de no hacerlo la pagina se recarga
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      //Hace un post a la base de datos mandando el nombre ingresado
-      const apiBaseUrl = `http://${window.location.hostname}:3000`;
-      const res = await axios.post(`${apiBaseUrl}/api/auth/login`, { nombre });
+  const apiBaseUrl = `http://${window.location.hostname}:3000`;
 
-      setUser(res.data.usuario); // Guarda usuario en contexto para poder usarlo y mostrarlo en el Juego
-      navigate("/bienvenida"); // Redirige al tablero para poder jugar
-    } catch (err) {
-      //En caso de que haya un error muestra una alerta de "Error al iniciar sesion"
-      alert("Error al iniciar sesión");
-    }
-  };
+  try {
+    const res = await axios.post(`${apiBaseUrl}/api/auth/login`, { nombre });
+    setUser(res.data.usuario);
+    navigate("/bienvenida");
+  } catch (err) {
+    console.warn("Primer intento fallido, reintentando...");
+
+    // Espera 500ms y reintenta una vez más
+    setTimeout(async () => {
+      try {
+        const res = await axios.post(`${apiBaseUrl}/api/auth/login`, { nombre });
+        setUser(res.data.usuario);
+        navigate("/bienvenida");
+      } catch (err2) {
+        alert("Error al iniciar sesión");
+      }
+    }, 500);
+  }
+};
+
 
   return (
     <main id="main-login">
     <form id="form-login" onSubmit={handleSubmit}>
       <h1>Iniciar sesión</h1>
-      <div id="form-group">
-        <label htmlFor="input-login">Nombre: </label>
+      <div id="container-login">
         <input
           id="input-login"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          placeholder="Nombre de usuario"
+          required
         />
+        <label htmlFor="input-login" id="label-login" >Nombre: </label>
       </div>
       <button id="button-login" type="submit">
         Iniciar sesión

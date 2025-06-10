@@ -41,3 +41,13 @@
   color: #262626;
   scale: 1.1;
 }
+
+
+@media (max-width: 600px) {
+  #main-bienvenida{
+    padding: 40% 0 50% 0;
+ } 
+ #bienvenida>img{
+  width: 100%;
+ }
+}

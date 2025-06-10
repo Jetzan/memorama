@@ -4,7 +4,7 @@ import axios from 'axios';
 
 //Se define la URL del backend 
 //http://localhost:3000/api/auth es donde esta corriendo el servidor Node.js (Backend)
-const API = 'http://172.16.135.36:3000/login/api/auth';
+const API = 'http://localhost:3000/api/auth';
 
 
 
