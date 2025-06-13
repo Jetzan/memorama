@@ -13,14 +13,13 @@ function App() {
     <UserProvider>
       <TableroProvider>
         <JugandoProvider>
-            <GanoProvider>
-              <PuntajeProvider>
-
+          <GanoProvider>
+            <PuntajeProvider>
               <Header />
               <AppRoutes />
               <Footer />
-              </PuntajeProvider>
-            </GanoProvider>
+            </PuntajeProvider>
+          </GanoProvider>
         </JugandoProvider>
       </TableroProvider>
     </UserProvider>

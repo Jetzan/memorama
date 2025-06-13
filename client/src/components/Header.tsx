@@ -1,14 +1,16 @@
 import "./Header.css";
 import { useUser } from "../context/UserContext";
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTablero } from "../context/TableroContext";
 import { useJugando } from "../context/JugandoContext";
 import { useGano } from "../context/GanoContext";
 import { fetchActualizarJugador } from "../api";
 import axios from "axios";
 import { usePuntaje } from "../context/PuntajeContext";
+import { useNavigate } from "react-router-dom";
 
 function Header() {
+  const navigate = useNavigate();
   const { user, setUser } = useUser();
 
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
@@ -17,9 +19,9 @@ function Header() {
 
   const { jugando, setJugando } = useJugando();
 
-  const { gano } = useGano();
+  const { gano, setGano } = useGano();
 
-  const { puntaje ,setPuntaje } = usePuntaje();
+  const { puntaje, setPuntaje } = usePuntaje();
 
   const [mostrarInfo, setMostrarInfo] = useState<boolean>(false);
 
@@ -42,8 +44,8 @@ function Header() {
   useEffect(() => {
     if (jugando) {
       setActivo(true);
-      console.log("Esta jugando");
     } else {
+      setTiempo({ minutos: 0, segundos: 0 });
       setActivo(false);
     }
   }, [jugando]);
@@ -89,9 +91,12 @@ function Header() {
     string | null
   >(null);
   let handleClick = (nombreDificultad: string) => {
+    if (!nombreDificultad) {
+      alert("Selecciona una dificultad");
+      return;
+    } // evitar null o vacío
     setDificultadSeleccionada(nombreDificultad);
     setTablero(nombreDificultad); // Usa el valor directamente, no el estado
-    console.log(`Dificultad seleccionada: ${nombreDificultad}`);
   };
 
   let actualizarDatos = async () => {
@@ -103,13 +108,7 @@ function Header() {
       const res = await axios.post(`${apiBaseUrl}/api/auth/login`, {
         nombre: user.nombre,
       });
-      console.log("Respuesta de actualización:", res.data);
       setUser(JSON.parse(JSON.stringify(res.data.usuario)));
-      console.log(
-        `Nombre: ${user.nombre} TiempoFacil: ${user.tiempoFacil} Puntaje Facil: ${user.puntajeFacil} `
-      );
-
-      console.log("Datos del usuario actualizados:", res.data.usuario);
     } catch (error) {
       console.error("Error al actualizar datos del usuario:", error);
     }
@@ -130,9 +129,11 @@ function Header() {
           tiempoLimite = 120;
           break;
       }
-      setPuntaje(puntaje + (tiempo.minutos * 60 + tiempo.segundos < tiempoLimite ? 100 : 0));
-      console.log("Puntaje ...",puntaje)
       const totalSegundos = tiempo.minutos * 60 + tiempo.segundos;
+      const bono = totalSegundos < tiempoLimite ? 100 : 0;
+      const nuevoPuntaje = puntaje + bono;
+
+      setPuntaje(nuevoPuntaje);
 
       // Lógica para guardar puntaje aquí directamente
       const dificultadGuardar =
@@ -143,7 +144,7 @@ function Header() {
           : "Dificil";
 
       const campos = {
-        [`puntaje${dificultadGuardar}`]: puntaje,
+        [`puntaje${dificultadGuardar}`]: nuevoPuntaje,
         [`tiempo${dificultadGuardar}`]: totalSegundos,
       };
       setTiempo({ minutos: 0, segundos: 0 });
@@ -152,8 +153,7 @@ function Header() {
 
       fetchActualizarJugador(user.nombre, campos)
         .then((res) => {
-          console.log(res.mensaje)
-          console.log("Datos actualizados en el servidor:", campos);
+          console.log(res.mensaje);
           return actualizarDatos();
         })
         .catch((err) => console.error("Error actualizando jugador:", err));
@@ -161,7 +161,6 @@ function Header() {
   }, [gano]);
 
   let handleClickUser = () => {
-    console.log("lll");
     setMostrarInfo(true);
   };
 
@@ -177,7 +176,11 @@ function Header() {
             <select
               id="select-dificultad"
               onChange={(e) => handleClick(e.target.value)}
+              defaultValue=""
             >
+              <option value="" disabled>
+                Selecciona dificultad
+              </option>
               <option value="easy">FÁCIL</option>
               <option value="medium">MEDIO</option>
               <option value="hard">DIFÍCIL</option>
@@ -191,7 +194,7 @@ function Header() {
                 }`}
                 id="dificultad-facil"
                 onClick={() => handleClick("easy")}
-                disabled={jugando}
+                disabled={jugando || gano}
               >
                 FACIL
               </button>
@@ -201,7 +204,7 @@ function Header() {
                 }`}
                 id="dificultad-medio"
                 onClick={() => handleClick("medium")}
-                disabled={jugando}
+                disabled={jugando || gano}
               >
                 MEDIO
               </button>
@@ -211,14 +214,14 @@ function Header() {
                 }`}
                 id="dificultad-dificil"
                 onClick={() => handleClick("hard")}
-                disabled={jugando}
+                disabled={jugando || gano}
               >
                 DIFICIL
               </button>
             </>
           )}
 
-          <span id="cronometro">
+          <span id="cronometro" className={jugando ? "" : "ocultar"}>
             {(tiempo.minutos > 9 ? tiempo.minutos : "0" + tiempo.minutos) +
               " : " +
               (tiempo.segundos > 9 ? tiempo.segundos : "0" + tiempo.segundos)}
@@ -261,11 +264,19 @@ function Header() {
                 Dificil: {user.tiempoDificil}
                 <br />
               </div>
-              <p className="title-div">Record</p>
-              <div className="info-div">
-                Mejor puntaje: <br />
-                Mejor tiempo: <br />
-              </div>
+              <button
+                id="cerrar-sesion"
+                onClick={() => {
+                  setUser(null); // Elimina el usuario
+                  setTablero(null); // Reinicia la dificultad
+                  setJugando(false); // Finaliza el estado de juego
+                  setGano(false); // Reinicia el estado de victoria
+                  setPuntaje(0); // Reinicia el puntaje
+                  navigate("/login"); // Redirige al login o inicio
+                }}
+              >
+                Cerrar sesión
+              </button>
             </div>
           </div>
         </>

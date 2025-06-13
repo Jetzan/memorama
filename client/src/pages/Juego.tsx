@@ -1,80 +1,90 @@
-import { useUser } from "../context/UserContext";
-import "./Juego.css";
-import { fetchObtenerValor } from "../api";
-import { useTablero } from "../context/TableroContext";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
+import { useTablero } from "../context/TableroContext";
 import { useGano } from "../context/GanoContext";
 import { usePuntaje } from "../context/PuntajeContext";
+import { useJugando } from "../context/JugandoContext";
+import { fetchObtenerValor, fetchGenerarTablero } from "../api";
+import "./Juego.css";
 
+// Función auxiliar para obtener fila y columna a partir del índice
+function obtenerFilaColumna(index: number, columnas: number) {
+  const fila = Math.floor(index / columnas);
+  const columna = index % columnas;
+  return { fila, columna };
+}
 
 function Juego() {
+  // --- Contextos y hooks de estado global ---
   const { tablero } = useTablero();
   const { user } = useUser();
-
-  const { gano, setGano } = useGano();
-
-  const [puntos, setPuntos] = useState(0);
+  const { setGano } = useGano();
   const { setPuntaje } = usePuntaje();
+  const { setJugando } = useJugando();
+  const navigate = useNavigate();
 
-  const [intentosFallidos, setIntentosFallidos] = useState<{
-    [key: string]: number;
-  }>({});
-  const [tiempoInicio, setTiempoInicio] = useState(Date.now());
+  // --- Hooks de estado local ---
+  const [puntos, setPuntos] = useState(0);
+  const [cartasVistas, setCartasVistas] = useState<Set<string>>(new Set());
+  const [intentosFallidos, setIntentosFallidos] = useState<{ [key: string]: number }>({});
+  const [cartasVolteadas, setCartasVolteadas] = useState<{ index: number; valor: string }[]>([]);
+  const [cartasEncontradas, setCartasEncontradas] = useState<number[]>([]);
 
-  if (!user) return <p>No has iniciado sesión.</p>;
-
-  let filas = 3,
-    columnas = 4;
+  // --- Configuración de filas y columnas según dificultad ---
+  let filas = 3, columnas = 4;
   switch (tablero) {
     case "easy":
-      filas = 3;
-      columnas = 4;
-      break;
+      filas = 3; columnas = 4; break;
     case "medium":
-      filas = 4;
-      columnas = 5;
-      break;
+      filas = 4; columnas = 5; break;
     case "hard":
-      filas = 4;
-      columnas = 7;
-      break;
+      filas = 4; columnas = 7; break;
   }
-  useEffect(() => {
-    setPuntos(0);
-    setIntentosFallidos({});
-    setTiempoInicio(Date.now());
-  }, [tablero]);
-
   const totalCartas = filas * columnas;
   const [imagenes, setImagenes] = useState<string[]>(
     Array(totalCartas).fill("images/tablero/Tapa.png")
   );
-  const [cartasVolteadas, setCartasVolteadas] = useState<
-    { index: number; valor: string }[]
-  >([]);
-  const [cartasEncontradas, setCartasEncontradas] = useState<number[]>([]);
 
-  const obtenerFilaColumna = (index: number) => {
-    const fila = Math.floor(index / columnas);
-    const columna = index % columnas;
-    return { fila, columna };
+  // --- Handlers ---
+  const handleVolverJugar = async () => {
+    try {
+      await fetchGenerarTablero(tablero);
+      setCartasVolteadas([]);
+      setCartasEncontradas([]);
+      setImagenes(Array(totalCartas).fill("images/tablero/Tapa.png"));
+      setPuntos(0);
+      setIntentosFallidos({});
+      setCartasVistas(new Set());
+      setGano(false);
+      setPuntaje(0);
+      setJugando(false);
+      setTimeout(() => setJugando(true), 100);
+      window.location.href = "#juego";
+    } catch (error) {
+      alert("Error al volver a jugar");
+    }
+  };
+
+  const handleRegresar = () => {
+    setJugando(false);
+    setGano(false);
+    navigate("/bienvenida");
   };
 
   const handleObtenerValor = async (index: number) => {
-    // si ya está descubierta, no hacer nada
     if (
       cartasVolteadas.some((c) => c.index === index) ||
       cartasEncontradas.includes(index)
     )
       return;
 
-    const { fila, columna } = obtenerFilaColumna(index);
+    const { fila, columna } = obtenerFilaColumna(index, columnas);
 
     try {
       const res = await fetchObtenerValor(fila, columna);
-      const valor = res.valor; // usa valor.valor
+      const valor = res.valor;
 
-      // Mostrar carta
       setImagenes((prev) => {
         const copia = [...prev];
         copia[index] = `images/tablero/${valor}.png`;
@@ -83,88 +93,68 @@ function Juego() {
 
       const nuevaCarta = { index, valor };
       const nuevasCartas = [...cartasVolteadas, nuevaCarta];
-
       setCartasVolteadas(nuevasCartas);
 
-      // Si son 2 cartas, verificar si coinciden
       if (nuevasCartas.length === 2) {
-        if (nuevasCartas.length === 2) {
-          const [c1, c2] = nuevasCartas;
+        const [c1, c2] = nuevasCartas;
+        if (c1.valor === c2.valor) {
+          setCartasEncontradas((prev) => [...prev, c1.index, c2.index]);
+          setCartasVolteadas([]);
+          setPuntos((prev) => prev + 10);
+        } else {
+          const key = `${c1.valor}-${c2.valor}`;
+          const primeraVez1 = !cartasVistas.has(c1.valor);
+          const primeraVez2 = !cartasVistas.has(c2.valor);
 
-          if (c1.valor === c2.valor) {
-            // ✅ Par correcto
-            setCartasEncontradas((prev) => [...prev, c1.index, c2.index]);
-            setCartasVolteadas([]);
-            setPuntos((prev) => prev + 10);
-          } else {
-            // ❌ Par incorrecto
-            const key = `${c1.valor}-${c2.valor}`;
-
-            // No penalizar si es la primera vez que se ven estas cartas
-            const primeraVez1 = !Object.values(intentosFallidos).some(
-              (v) => v === c1.valor
-            );
-            const primeraVez2 = !Object.values(intentosFallidos).some(
-              (v) => v === c2.valor
-            );
-
-            if (!primeraVez1 || !primeraVez2) {
-              // Ya se habían equivocado antes con estas cartas
-              setPuntos((prev) => prev - 2);
-            }
-
-            // Registrar intento fallido
-            setIntentosFallidos((prev) => {
-              const nuevo = { ...prev };
-              nuevo[key] = (nuevo[key] || 0) + 1;
-              return nuevo;
-            });
+          if (!primeraVez1 || !primeraVez2) {
+            setPuntos((prev) => prev - 2);
           }
+          setIntentosFallidos((prev) => {
+            const nuevo = { ...prev };
+            nuevo[key] = (nuevo[key] || 0) + 1;
+            return nuevo;
+          });
         }
+        setCartasVistas((prev) => new Set([...prev, c1.valor, c2.valor]));
       }
     } catch (error) {
       alert("Error al obtener el valor...");
     }
   };
-  useEffect(() => {
-    if (cartasEncontradas.length === totalCartas) {
-     
-      
-
-      console.log("Gano con puntos:", puntos);
-      alert(
-        `¡Felicidades! Has ganado con ${puntos
-        } puntos 🎉`
-      );
-      setGano(true);
-    }
-  }, [cartasEncontradas, totalCartas]);
 
   const handleMouseLeave = () => {
     if (cartasVolteadas.length === 2) {
       const [c1, c2] = cartasVolteadas;
-
       if (c1.valor !== c2.valor) {
-        // Voltear de nuevo
-        setImagenes((prev) => {
-          const copia = [...prev];
-          copia[c1.index] = "images/tablero/Tapa.png";
-          copia[c2.index] = "images/tablero/Tapa.png";
-          return copia;
-        });
-
-        setCartasVolteadas([]); // limpiar selección
+        setTimeout(() => {
+          setImagenes((prev) => {
+            const copia = [...prev];
+            copia[c1.index] = "images/tablero/Tapa.png";
+            copia[c2.index] = "images/tablero/Tapa.png";
+            return copia;
+          });
+          setCartasVolteadas([]);
+        }, 500);
       }
     }
   };
 
+  // --- Efectos ---
+  useEffect(() => {
+    setPuntos(0);
+    setIntentosFallidos({});
+  }, [tablero]);
+
   useEffect(() => {
     if (cartasEncontradas.length === totalCartas) {
-      alert("¡Felicidades! Has encontrado todos los pares 🎉");
+      alert(`¡Felicidades! Has ganado con ${puntos} puntos 🎉`);
       setPuntaje(puntos);
       setGano(true);
     }
   }, [cartasEncontradas, totalCartas]);
+
+  // --- Render ---
+  if (!user) return <p>No has iniciado sesión.</p>;
 
   return (
     <>
@@ -200,6 +190,22 @@ function Juego() {
             </div>
           </button>
         ))}
+      </div>
+      <div id="manejo-container">
+        <button
+          id="regresar"
+          className="botones-manejo"
+          onClick={handleRegresar}
+        >
+          Regresar
+        </button>
+        <button
+          id="volver-jugar"
+          className="botones-manejo"
+          onClick={handleVolverJugar}
+        >
+          Volver a Jugar
+        </button>
       </div>
     </>
   );

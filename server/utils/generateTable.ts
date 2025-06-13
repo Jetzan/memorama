@@ -1,8 +1,24 @@
 // utils/generateTable.ts
 
 const vector = [
-  "C", "CPP", "Java", "JavaScript", "Python", "Ruby", "PHP", "Swift",
-  "Go", "Rust", "CSharp", "CSS", "HTML", "MySQL", "R", "Perl", "Node", "React"
+  "C",
+  "CPP",
+  "Java",
+  "JavaScript",
+  "Python",
+  "Ruby",
+  "PHP",
+  "Swift",
+  "Go",
+  "Rust",
+  "CSharp",
+  "CSS",
+  "HTML",
+  "MySQL",
+  "R",
+  "Perl",
+  "Node",
+  "React",
 ];
 
 function countOcurrences(matrix: string[][], value: string): number {
@@ -35,7 +51,6 @@ function createMatrix(row: number, col: number): string[][] {
   return matrix;
 }
 
-
 export const createTableEasy = (): string[][] => {
   return createMatrix(4, 3);
 };
@@ -48,6 +63,10 @@ export const createTableHard = (): string[][] => {
   return createMatrix(7, 4);
 };
 
-export const getValueInTable = (table: string[][], x: number, y: number): string => {
+export const getValueInTable = (
+  table: string[][],
+  x: number,
+  y: number
+): string => {
   return table[x][y];
 };
