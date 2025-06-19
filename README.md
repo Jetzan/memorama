@@ -48,7 +48,7 @@ CORS
 🗃️ Base de Datos
 La base de datos incluye la siguiente tabla:
 
-usuarios: almacena nombre, correo y contraseña
+usuarios: almacena nombre
 
 👨‍💻 Autor
 Jetzan Esquivel
